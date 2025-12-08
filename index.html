@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<title>粉紅超跑：V11.0 Q版金爐登場</title>
+<title>粉紅超跑：V12.0 有聲熱鬧版</title>
 <style>
     body, html {
         margin: 0;
@@ -75,8 +75,26 @@
         z-index: 10;
         display: flex;
         gap: 15px;
+        align-items: center;
     }
     
+    /* 音效按鈕樣式 */
+    #muteBtn {
+        pointer-events: auto; /* 允許點擊 */
+        background: rgba(255, 255, 255, 0.8);
+        border: 2px solid #e84393;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    #muteBtn:active { transform: scale(0.9); }
+
     .screen {
         position: absolute;
         top: 0; left: 0; width: 100%; height: 100%;
@@ -138,15 +156,16 @@
         <canvas id="gameCanvas"></canvas>
         
         <div id="uiLayer">
+            <!-- 音效開關按鈕 -->
+            <div id="muteBtn" onclick="toggleMute()">🔊</div>
             <div>福氣: <span id="score">0</span></div>
             <div style="color:#0984e3">速度: <span id="level">1</span></div>
         </div>
         
         <div id="startScreen" class="screen">
-            <!-- 這裡我也畫一個小金爐當圖示 -->
             <div style="font-size:60px; margin-bottom:10px">🚐💨</div>
-            <h1>粉紅超跑 V11.0</h1>
-            <p>全新 Q版金爐登場！<br>手指上下滑動控制</p>
+            <h1>粉紅超跑 V12.0</h1>
+            <p>有聲音囉！🔊<br>手指上下滑動控制</p>
             <button onclick="startGame()">起駕出發</button>
             
             <div class="author-link">
@@ -172,6 +191,58 @@
 </div>
 
 <script>
+    // --- 音效管理器 (Sound Manager) ---
+    // 使用 Web Audio API 合成聲音，不需外部檔案
+    const SoundManager = {
+        ctx: null,
+        isMuted: false,
+        init: function() {
+            // 瀏覽器相容性
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!this.ctx) {
+                this.ctx = new AudioContext();
+            }
+        },
+        playTone: function(freq, type, duration, vol = 0.1) {
+            if (this.isMuted || !this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            
+            osc.type = type; // sine, square, sawtooth, triangle
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+        },
+        // 吃到好東西 (清脆的叮聲)
+        playCollect: function() {
+            this.playTone(880, 'sine', 0.1, 0.1); // High A
+            setTimeout(() => this.playTone(1760, 'sine', 0.1, 0.05), 50); // High A octave
+        },
+        // 撞到壞東西 (低沈雜音)
+        playHit: function() {
+            this.playTone(150, 'sawtooth', 0.3, 0.1);
+            this.playTone(100, 'square', 0.3, 0.1);
+        },
+        // 啟動鑽轎底 (爬升音階)
+        playFeverStart: function() {
+            let now = this.ctx.currentTime;
+            [523, 659, 783, 1046, 1318].forEach((freq, i) => {
+                setTimeout(() => this.playTone(freq, 'triangle', 0.2, 0.1), i * 100);
+            });
+        },
+        // 鑽轎底得分 (快速高頻)
+        playFeverCollect: function() {
+            this.playTone(1200 + Math.random()*500, 'sine', 0.08, 0.05);
+        }
+    };
+
     const container = document.getElementById('gameContainer');
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -180,6 +251,7 @@
     const startScreen = document.getElementById('startScreen');
     const gameOverScreen = document.getElementById('gameOverScreen');
     const finalScoreEl = document.getElementById('finalScore');
+    const muteBtn = document.getElementById('muteBtn');
 
     let gameRunning = false;
     let score = 0;
@@ -196,18 +268,22 @@
     let canvasWidth = 800;
     let canvasHeight = 450;
     
+    // 音效開關邏輯
+    function toggleMute() {
+        SoundManager.isMuted = !SoundManager.isMuted;
+        muteBtn.innerText = SoundManager.isMuted ? '🔇' : '🔊';
+        // 防止點擊按鈕時觸發遊戲控制
+        if(window.event) window.event.stopPropagation();
+    }
+
     function resizeCanvas() {
         const dpr = window.devicePixelRatio || 1;
         const rect = container.getBoundingClientRect();
-        
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
-        
         ctx.scale(dpr, dpr);
-        
         canvasWidth = rect.width;
         canvasHeight = rect.height;
-
         if(gameRunning) {
             player.targetY = Math.min(player.targetY, canvasHeight - 50);
         }
@@ -272,23 +348,19 @@
         }
     };
 
-    // --- 新增：繪製可愛金爐的專用函式 ---
     function drawCuteFurnace(ctx, x, y, size) {
         ctx.save();
         ctx.translate(x, y);
-        const scale = size / 55; // 基礎縮放比例
+        const scale = size / 55;
         ctx.scale(scale, scale);
 
-        // 1. 香菸 (在最後面)
-        ctx.strokeStyle = '#8B4513';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(-5, -20); ctx.lineTo(-5, -35);
         ctx.moveTo(0, -20); ctx.lineTo(0, -40);
         ctx.moveTo(5, -20); ctx.lineTo(5, -35);
         ctx.stroke();
 
-        // 2. 煙霧 (飄動效果)
         ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
         let smokeOffset = Math.sin(frames * 0.1) * 3;
         ctx.beginPath();
@@ -296,73 +368,30 @@
         ctx.arc(-3 + smokeOffset, -52, 4, 0, Math.PI*2);
         ctx.fill();
 
-        // 3. 金爐把手 (金色耳朵)
         ctx.fillStyle = '#F1C40F';
-        ctx.beginPath();
-        ctx.ellipse(-28, -5, 8, 12, 0, 0, Math.PI*2); // 左耳
-        ctx.ellipse(28, -5, 8, 12, 0, 0, Math.PI*2); // 右耳
-        ctx.fill();
-        // 把手環
-        ctx.strokeStyle = '#DAA520';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(-28, 5, 5, 0, Math.PI*2);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(28, 5, 5, 0, Math.PI*2);
-        ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(-28, -5, 8, 12, 0, 0, Math.PI*2); 
+        ctx.ellipse(28, -5, 8, 12, 0, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(-28, 5, 5, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(28, 5, 5, 0, Math.PI*2); ctx.stroke();
 
-        // 4. 金爐身體 (紅磚色)
-        // 建立漸層讓它有立體感
         let grd = ctx.createLinearGradient(-20, -20, 20, 20);
-        grd.addColorStop(0, '#e74c3c'); // 亮紅
-        grd.addColorStop(1, '#c0392b'); // 暗紅
-        ctx.fillStyle = grd;
-        ctx.beginPath();
-        // 畫一個圓胖的身體
-        ctx.arc(0, 0, 25, 0, Math.PI*2); 
-        ctx.fill();
+        grd.addColorStop(0, '#e74c3c'); grd.addColorStop(1, '#c0392b');
+        ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill();
 
-        // 5. 金爐頂蓋邊緣 (金色)
-        ctx.fillStyle = '#FFD700';
-        ctx.beginPath();
-        ctx.ellipse(0, -22, 22, 6, 0, 0, Math.PI*2);
-        ctx.fill();
+        ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.ellipse(0, -22, 22, 6, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#DAA520'; ctx.beginPath(); ctx.roundRect(-20, 22, 40, 8, 5); ctx.fill();
 
-        // 6. 底座 (金色)
-        ctx.fillStyle = '#DAA520';
-        ctx.beginPath();
-        ctx.roundRect(-20, 22, 40, 8, 5);
-        ctx.fill();
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(-10, -2, 4, Math.PI, 0); ctx.stroke();
+        ctx.beginPath(); ctx.arc(10, -2, 4, Math.PI, 0); ctx.stroke();
 
-        // 7. 表情 (可愛的關鍵)
-        // 眼睛 (笑瞇瞇)
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(-10, -2, 4, Math.PI, 0); // 左眼 ^
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(10, -2, 4, Math.PI, 0); // 右眼 ^
-        ctx.stroke();
-
-        // 腮紅
-        ctx.fillStyle = '#ff9ff3';
-        ctx.globalAlpha = 0.6;
-        ctx.beginPath();
-        ctx.arc(-15, 5, 4, 0, Math.PI*2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(15, 5, 4, 0, Math.PI*2);
-        ctx.fill();
+        ctx.fillStyle = '#ff9ff3'; ctx.globalAlpha = 0.6;
+        ctx.beginPath(); ctx.arc(-15, 5, 4, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(15, 5, 4, 0, Math.PI*2); ctx.fill();
         ctx.globalAlpha = 1.0;
 
-        // 嘴巴 (開口笑)
-        ctx.fillStyle = '#8e44ad'; // 嘴內深色
-        ctx.beginPath();
-        ctx.arc(0, 5, 6, 0, Math.PI);
-        ctx.fill();
-
+        ctx.fillStyle = '#8e44ad'; ctx.beginPath(); ctx.arc(0, 5, 6, 0, Math.PI); ctx.fill();
         ctx.restore();
     }
 
@@ -371,7 +400,6 @@
         { emoji: '🏮', type: 'good', points: 10, size: 45, color: '#e17055' },
         { emoji: '🍑', type: 'good', points: 20, size: 45, color: '#ff7675' },
         { emoji: '💥', type: 'bad', points: 0, size: 40 }, 
-        // ⚱️ 金爐改為 trigger 類型，不再使用 emoji
         { emoji: '', type: 'trigger', points: 50, size: 55, color: '#fdcb6e' } 
     ];
     const believerItem = { emoji: '🙇', type: 'fever', points: 50, size: 55, color: '#ffeaa7' };
@@ -397,11 +425,9 @@
             this.markedForDeletion = false;
         }
         draw() {
-            // 如果是 trigger (金爐)，使用自定義繪圖
             if (this.typeData.type === 'trigger') {
                 drawCuteFurnace(ctx, this.x, this.y, this.typeData.size);
             } else {
-                // 其他道具繼續使用 Emoji
                 ctx.font = `${this.typeData.size}px serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -416,16 +442,28 @@
             const dist = Math.hypot(this.x - player.x, this.y - player.y);
             if (dist < 60) {
                 if (this.typeData.type === 'bad') {
-                    if (!isFeverMode) endGame(); 
+                    if (!isFeverMode) {
+                        SoundManager.playHit(); // 播放撞擊音效
+                        endGame(); 
+                    }
                 } 
                 else if (this.typeData.type === 'trigger') {
                     startFeverMode();
+                    SoundManager.playFeverStart(); // 播放鑽轎底啟動音效
                     this.markedForDeletion = true;
                     createExplosion(this.x, this.y, '#fdcb6e');
                 }
                 else {
                     score += this.typeData.points;
                     scoreEl.innerText = score;
+                    
+                    // 播放得分音效
+                    if(this.typeData.type === 'fever') {
+                        SoundManager.playFeverCollect();
+                    } else {
+                        SoundManager.playCollect();
+                    }
+
                     this.markedForDeletion = true;
                     createExplosion(this.x, this.y, this.typeData.color);
                     updateDifficulty();
@@ -584,6 +622,12 @@
     }
 
     function startGame() {
+        // 初始化音效 (必須在使用者點擊後觸發)
+        SoundManager.init();
+        if(SoundManager.ctx && SoundManager.ctx.state === 'suspended') {
+            SoundManager.ctx.resume();
+        }
+
         if (animationId) cancelAnimationFrame(animationId);
         resizeCanvas();
         gameRunning = true;
@@ -600,8 +644,6 @@
         container.classList.add('bg-normal');
         
         scoreEl.innerText = score;
-        
-        // 初始位置設定
         player.y = canvasHeight / 2;
         player.targetY = canvasHeight / 2;
         
