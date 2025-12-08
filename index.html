@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>粉紅超跑：鑽轎底祈福版 V4.0</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        /* 預設背景：藍天 */
+        background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%);
+        font-family: '微軟正黑體', sans-serif;
+        overflow: hidden;
+        touch-action: none;
+        transition: background 0.5s;
+    }
+    /* 鑽轎底模式的背景：金光喜氣 */
+    body.fever-mode {
+        background: linear-gradient(180deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+    }
+
+    #gameContainer {
+        position: relative;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        border-radius: 15px;
+        overflow: hidden;
+        background: #fdfbf7;
+        border: 4px solid #fff;
+    }
+    canvas { display: block; }
+    
+    #uiLayer {
+        position: absolute;
+        top: 15px;
+        left: 20px;
+        color: #e84393;
+        font-size: 24px;
+        font-weight: 900;
+        text-shadow: 2px 2px 0 #fff;
+        z-index: 10;
+        pointer-events: none;
+    }
+
+    /* 鑽轎底提示文字 */
+    #feverText {
+        position: absolute;
+        top: 20%;
+        width: 100%;
+        text-align: center;
+        font-size: 40px;
+        color: #d63031;
+        font-weight: bold;
+        text-shadow: 3px 3px 0 #fff, 0 0 20px rgba(255,215,0,0.8);
+        display: none;
+        animation: pulse 0.5s infinite alternate;
+        pointer-events: none;
+        z-index: 15;
+    }
+
+    .screen {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.9);
+        text-align: center;
+        color: #e84393;
+        z-index: 20;
+    }
+    h1 { margin: 0 0 15px 0; font-size: 32px; text-shadow: 2px 2px 0px #ffeaa7; }
+    p { font-size: 18px; color: #555; font-weight: bold; margin-bottom: 25px; }
+    button {
+        background: linear-gradient(to bottom, #ff9ff3, #f368e0);
+        color: white;
+        border: none;
+        padding: 12px 40px;
+        font-size: 22px;
+        border-radius: 50px;
+        cursor: pointer;
+        box-shadow: 0 6px 0 #c445b0;
+        font-weight: bold;
+        transition: transform 0.1s;
+    }
+    button:active { transform: translateY(6px); box-shadow: 0 0 0 #c445b0; }
+    
+    @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
+</style>
+</head>
+<body>
+
+<div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+    <div id="uiLayer">福氣: <span id="score">0</span></div>
+    <div id="feverText">🙏 鑽轎底保平安 🙏<br><span style="font-size:20px">福氣加倍中!</span></div>
+    
+    <div id="startScreen" class="screen">
+        <div style="font-size:60px; margin-bottom:20px">🚐💨</div>
+        <h1>粉紅超跑 V4.0</h1>
+        <p>收集金爐 ⚱️ 開啟「鑽轎底」模式<br>賜福給信徒 🙇 獲得高分！</p>
+        <button onclick="startGame()">起駕出發</button>
+    </div>
+
+    <div id="gameOverScreen" class="screen" style="display: none;">
+        <h1>🙏 圓滿駐駕 🙏</h1>
+        <p>本次累積福氣</p>
+        <h2 style="font-size: 50px; margin: 10px 0; color: #d63031;" id="finalScore">0</h2>
+        <button onclick="startGame()">再次起駕</button>
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById('gameContainer');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const finalScoreEl = document.getElementById('finalScore');
+    const feverText = document.getElementById('feverText');
+    const body = document.body;
+
+    let gameRunning = false;
+    let score = 0;
+    let frames = 0;
+    let gameSpeed = 4;
+    
+    // 鑽轎底模式 (Fever Mode) 變數
+    let isFeverMode = false;
+    let feverTimer = 0;
+    const FEVER_DURATION = 300; // 持續 300 幀 (約5秒)
+
+    // RWD 設定
+    function resizeCanvas() {
+        let width = Math.min(window.innerWidth - 20, 700);
+        let height = 400;
+        if (window.innerWidth < 600) height = window.innerHeight * 0.65;
+        canvas.width = width;
+        canvas.height = height;
+        container.style.width = width + 'px';
+        container.style.height = height + 'px';
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // 粒子特效
+    const particles = [];
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x;
+            this.y = y;
+            this.size = Math.random() * 6 + 2;
+            this.speedX = Math.random() * 8 - 4;
+            this.speedY = Math.random() * 8 - 4;
+            this.color = color;
+            this.life = 1;
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            this.life -= 0.04;
+            this.size *= 0.9;
+        }
+        draw() {
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = Math.max(0, this.life);
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    // 粉紅超跑主角
+    const player = {
+        x: 80,
+        y: 200,
+        width: 80, // 判定寬度
+        height: 60,
+        targetY: 200,
+        draw: function() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            
+            // 晃動效果 (Fever 模式下晃動更快)
+            const bounceSpeed = isFeverMode ? 0.6 : 0.3;
+            const bounce = Math.sin(frames * bounceSpeed) * 3;
+            ctx.translate(0, bounce);
+
+            // 1. 陰影
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(0, 35, 30, 8, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // 2. 轎棍
+            ctx.fillStyle = '#f1c40f';
+            ctx.fillRect(-35, 10, 70, 6);
+
+            // 3. 轎身 (如果是 Fever 模式，增加發光效果)
+            if (isFeverMode) {
+                ctx.shadowColor = '#ffeaa7';
+                ctx.shadowBlur = 20;
+            }
+            ctx.fillStyle = '#ff9ff3'; 
+            ctx.beginPath();
+            ctx.moveTo(-25, 10);
+            ctx.lineTo(25, 10);
+            ctx.lineTo(30, -15); 
+            ctx.quadraticCurveTo(0, -25, -30, -15);
+            ctx.fill();
+            ctx.shadowBlur = 0; // 重置陰影
+
+            // 4. 布簾與裝飾
+            ctx.fillStyle = '#fdcb6e';
+            ctx.fillRect(-20, 10, 40, 20);
+            ctx.fillStyle = '#d63031';
+            ctx.beginPath();
+            ctx.arc(0, -20, 5, 0, Math.PI*2); 
+            ctx.fill();
+            
+            // 5. 勇字
+            ctx.fillStyle = 'red';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('勇', 0, 24);
+
+            ctx.restore();
+        },
+        update: function() {
+            this.y += (this.targetY - this.y) * 0.15;
+            if(this.y < 40) this.targetY = 40;
+            if(this.y > canvas.height - 40) this.targetY = canvas.height - 40;
+        }
+    };
+
+    // 道具設定
+    const items = [];
+    const itemTypes = [
+        { emoji: '🏮', type: 'good', points: 10, size: 35, color: '#e17055' },
+        { emoji: '🍑', type: 'good', points: 20, size: 35, color: '#ff7675' },
+        { emoji: '💥', type: 'bad', points: 0, size: 30 }, 
+        { emoji: '⚱️', type: 'trigger', points: 50, size: 40, color: '#fdcb6e' } // 金爐：觸發道具
+    ];
+    
+    // 鑽轎底專用道具 (信徒)
+    const believerItem = { emoji: '🙇', type: 'fever', points: 50, size: 40, color: '#ffeaa7' };
+
+    class Item {
+        constructor(forceType = null) {
+            if (forceType) {
+                this.typeData = forceType;
+            } else {
+                // 一般模式隨機產生
+                let rand = Math.random();
+                if (rand < 0.05) this.typeData = itemTypes[3]; // 5% 機率出金爐
+                else if (rand < 0.35) this.typeData = itemTypes[2]; // 30% 機率壞東西
+                else if (rand < 0.65) this.typeData = itemTypes[1];
+                else this.typeData = itemTypes[0];
+            }
+
+            this.x = canvas.width + 50;
+            // 如果是信徒(鑽轎底)，位置會稍微偏下方，模擬在地上跪拜
+            if (this.typeData.type === 'fever') {
+                 this.y = Math.random() * (canvas.height/2) + (canvas.height/2 - 40);
+            } else {
+                 this.y = Math.random() * (canvas.height - 80) + 40;
+            }
+            
+            this.speed = gameSpeed + Math.random() * 2;
+            this.markedForDeletion = false;
+        }
+        draw() {
+            ctx.font = `${this.typeData.size}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(this.typeData.emoji, this.x, this.y);
+        }
+        update() {
+            // Fever 模式下道具移動稍微快一點
+            let currentSpeed = isFeverMode ? this.speed + 3 : this.speed;
+            this.x -= currentSpeed;
+            
+            if (this.x < -50) this.markedForDeletion = true;
+
+            const dist = Math.hypot(this.x - player.x, this.y - player.y);
+            // 碰撞判定範圍
+            if (dist < 45) {
+                if (this.typeData.type === 'bad') {
+                    if (!isFeverMode) endGame(); // 無敵模式下不怕炸彈
+                } 
+                else if (this.typeData.type === 'trigger') {
+                    // 吃到金爐，啟動鑽轎底模式
+                    startFeverMode();
+                    this.markedForDeletion = true;
+                    createExplosion(this.x, this.y, '#fdcb6e');
+                }
+                else {
+                    // 吃到好東西或信徒
+                    score += this.typeData.points;
+                    scoreEl.innerText = score;
+                    this.markedForDeletion = true;
+                    createExplosion(this.x, this.y, this.typeData.color);
+                    
+                    // 難度遞增
+                    if(score % 100 === 0) gameSpeed += 0.5;
+                }
+            }
+        }
+    }
+
+    function createExplosion(x, y, color) {
+        for(let i=0; i<10; i++){
+            particles.push(new Particle(x, y, color));
+        }
+    }
+
+    function startFeverMode() {
+        if (isFeverMode) {
+            feverTimer = FEVER_DURATION; // 延長時間
+            return;
+        }
+        isFeverMode = true;
+        feverTimer = FEVER_DURATION;
+        body.classList.add('fever-mode');
+        feverText.style.display = 'block';
+        
+        // 清除場上所有炸彈
+        items.forEach(item => {
+            if(item.typeData.type === 'bad') item.markedForDeletion = true;
+        });
+    }
+
+    function endFeverMode() {
+        isFeverMode = false;
+        body.classList.remove('fever-mode');
+        feverText.style.display = 'none';
+    }
+
+    // 速度線
+    const lines = [];
+    class SpeedLine {
+        constructor() {
+            this.x = canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.width = Math.random() * 20 + 10;
+            this.speed = Math.random() * 10 + 5;
+        }
+        update() {
+            let s = isFeverMode ? (this.speed + gameSpeed) * 1.5 : this.speed + gameSpeed;
+            this.x -= s;
+            if(this.x < -50) {
+                this.x = canvas.width;
+                this.y = Math.random() * canvas.height;
+            }
+        }
+        draw() {
+            ctx.fillStyle = isFeverMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(200, 200, 200, 0.3)';
+            ctx.fillRect(this.x, this.y, this.width, isFeverMode ? 3 : 2);
+        }
+    }
+    for(let i=0; i<10; i++) lines.push(new SpeedLine());
+
+    // 輸入監聽
+    const keys = {};
+    document.addEventListener('keydown', e => keys[e.code] = true);
+    document.addEventListener('keyup', e => keys[e.code] = false);
+
+    canvas.addEventListener('touchstart', handleTouch, {passive: false});
+    canvas.addEventListener('touchmove', handleTouch, {passive: false});
+    function handleTouch(e) {
+        if (!gameRunning) return;
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        player.targetY = e.touches[0].clientY - rect.top;
+    }
+
+    function animate() {
+        if (!gameRunning) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 背景線條
+        lines.forEach(line => { line.update(); line.draw(); });
+
+        // 主角
+        if (keys.ArrowUp) player.targetY -= 7;
+        if (keys.ArrowDown) player.targetY += 7;
+        player.update();
+        player.draw();
+
+        // 道具生成邏輯
+        let spawnRate = isFeverMode ? 10 : Math.max(25, 60 - gameSpeed*2); // Fever模式生成非常快
+        
+        if (frames % spawnRate === 0) {
+            if (isFeverMode) {
+                // 鑽轎底模式：只產生信徒
+                items.push(new Item(believerItem));
+            } else {
+                // 一般模式
+                items.push(new Item());
+            }
+        }
+
+        // 更新道具
+        for (let i = items.length - 1; i >= 0; i--) {
+            items[i].update();
+            items[i].draw();
+            if (items[i].markedForDeletion) items.splice(i, 1);
+        }
+
+        // 更新粒子
+        for (let i = particles.length - 1; i >= 0; i--) {
+            particles[i].update();
+            particles[i].draw();
+            if (particles[i].life <= 0) particles.splice(i, 1);
+        }
+
+        // Fever 模式倒數
+        if (isFeverMode) {
+            feverTimer--;
+            if (feverTimer <= 0) endFeverMode();
+        }
+
+        frames++;
+        requestAnimationFrame(animate);
+    }
+
+    function startGame() {
+        resizeCanvas();
+        gameRunning = true;
+        score = 0;
+        frames = 0;
+        gameSpeed = 4;
+        items.length = 0;
+        particles.length = 0;
+        isFeverMode = false;
+        body.classList.remove('fever-mode');
+        feverText.style.display = 'none';
+        
+        scoreEl.innerText = score;
+        player.y = canvas.height / 2;
+        player.targetY = canvas.height / 2;
+        startScreen.style.display = 'none';
+        gameOverScreen.style.display = 'none';
+        animate();
+    }
+
+    function endGame() {
+        gameRunning = false;
+        finalScoreEl.innerText = score;
+        gameOverScreen.style.display = 'flex';
+        body.classList.remove('fever-mode');
+        feverText.style.display = 'none';
+    }
+</script>
+</body>
+</html>
