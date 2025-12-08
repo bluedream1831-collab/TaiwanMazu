@@ -3,37 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<!-- 防止快取的 Meta 設定 -->
+<!-- 防止快取設定 -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<title>粉紅超跑：V9.0 作者導流版</title>
+<title>粉紅超跑：V10.0 大畫面好操作版</title>
 <style>
     body, html {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
-        /* 恢復頁面捲動，因為不再是全螢幕 APP 模式 */
         overflow-y: auto; 
         background-color: #a1c4fd;
         font-family: '微軟正黑體', sans-serif;
-        /* 讓背景有些裝飾，不會太單調 */
         background-image: radial-gradient(#ffffff 20%, transparent 20%), radial-gradient(#ffffff 20%, transparent 20%);
         background-position: 0 0, 50px 50px;
         background-size: 100px 100px;
+        /* 禁止選取，避免長按跳出選單 */
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
     }
 
-    /* 遊戲容器外層，用來置中 */
     .container-wrapper {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
-        padding: 20px 10px;
+        padding: 10px;
         box-sizing: border-box;
     }
 
@@ -42,7 +42,7 @@
         overflow: hidden;
         background: #fdfbf7;
         
-        /* 電腦版尺寸 */
+        /* 電腦版維持寬螢幕 */
         width: 800px;
         height: 450px;
         
@@ -52,14 +52,16 @@
         transition: background 0.5s;
     }
 
-    /* 手機版調整：不再全螢幕，改為響應式寬度 */
+    /* --- V10.0 關鍵修改：手機版 CSS --- */
     @media (max-width: 820px) {
         #gameContainer {
-            width: 100%;       /* 寬度佔滿容器 */
-            max-width: 600px;  /* 但不要太寬 */
-            height: auto;      /* 高度自動 */
-            aspect-ratio: 16/9; /* 維持 16:9 比例，像看影片一樣 */
-            border-radius: 10px;
+            width: 100%;
+            max-width: 100%;
+            /* 關鍵：使用視窗高度的 60%，讓畫面變高、變大！ */
+            height: 60vh; 
+            min-height: 400px; /* 確保至少有這麼高 */
+            aspect-ratio: auto; /* 取消固定比例 */
+            border-radius: 12px;
             margin-bottom: 20px;
         }
     }
@@ -73,7 +75,7 @@
         position: absolute;
         top: 15px; left: 15px;
         color: #e84393;
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 900;
         text-shadow: 2px 2px 0 #fff;
         pointer-events: none;
@@ -95,15 +97,15 @@
         z-index: 20;
     }
 
-    h1 { margin: 0 0 10px 0; font-size: 28px; text-shadow: 2px 2px 0px #ffeaa7; }
-    p { font-size: 16px; color: #555; font-weight: bold; margin-bottom: 20px; }
+    h1 { margin: 0 0 10px 0; font-size: 32px; text-shadow: 2px 2px 0px #ffeaa7; }
+    p { font-size: 18px; color: #555; font-weight: bold; margin-bottom: 20px; }
     
     button {
         background: linear-gradient(to bottom, #ff9ff3, #f368e0);
         color: white;
         border: none;
-        padding: 10px 35px;
-        font-size: 20px;
+        padding: 12px 40px;
+        font-size: 22px;
         border-radius: 50px;
         cursor: pointer;
         box-shadow: 0 5px 0 #c445b0;
@@ -113,7 +115,6 @@
     }
     button:active { transform: translateY(5px); box-shadow: 0 0 0 #c445b0; }
 
-    /* 作者連結樣式 */
     .author-link {
         font-size: 14px;
         color: #555;
@@ -121,30 +122,25 @@
         margin-top: 10px;
         font-weight: bold;
         background: rgba(255,255,255,0.8);
-        padding: 5px 15px;
+        padding: 6px 16px;
         border-radius: 20px;
         border: 1px solid #ddd;
     }
-    .author-link a {
-        color: #e84393;
-        text-decoration: none;
-    }
+    .author-link a { color: #e84393; text-decoration: none; }
+    
     .author-footer {
-        margin-top: 20px;
+        margin-top: 10px;
         font-size: 14px;
         color: #666;
+        padding-bottom: 20px;
     }
-    .author-footer a {
-        color: #0984e3;
-        font-weight: bold;
-    }
+    .author-footer a { color: #0984e3; font-weight: bold; }
 
 </style>
 </head>
 <body>
 
 <div class="container-wrapper">
-    <!-- 遊戲本體 -->
     <div id="gameContainer" class="bg-normal">
         <canvas id="gameCanvas"></canvas>
         
@@ -153,11 +149,10 @@
             <div style="color:#0984e3">速度: <span id="level">1</span></div>
         </div>
         
-        <!-- 開始畫面 -->
         <div id="startScreen" class="screen">
-            <div style="font-size:50px; margin-bottom:10px">🚐💨</div>
-            <h1>粉紅超跑 V9.0</h1>
-            <p>手機非全螢幕版<br>按住畫面上下滑動</p>
+            <div style="font-size:60px; margin-bottom:10px">🚐💨</div>
+            <h1>粉紅超跑 V10.0</h1>
+            <p>大畫面・好操作版<br>手指上下滑動控制</p>
             <button onclick="startGame()">起駕出發</button>
             
             <div class="author-link">
@@ -165,7 +160,6 @@
             </div>
         </div>
 
-        <!-- 結束畫面 -->
         <div id="gameOverScreen" class="screen" style="display: none;">
             <h1>🙏 圓滿駐駕 🙏</h1>
             <p>本次累積福氣</p>
@@ -178,7 +172,6 @@
         </div>
     </div>
 
-    <!-- 頁面下方的作者連結 -->
     <div class="author-footer">
         遊戲設計 by <a href="https://vocus.cc/user/@WUCJ" target="_blank">WUCJ</a>
     </div>
@@ -222,11 +215,10 @@
         canvasHeight = rect.height;
 
         if(gameRunning) {
-            player.y = canvasHeight / 2;
-            player.targetY = canvasHeight / 2;
+            // 視窗大小改變時，確保媽祖在安全範圍
+            player.targetY = Math.min(player.targetY, canvasHeight - 50);
         }
     }
-    // 監聽視窗變化
     window.addEventListener('resize', resizeCanvas);
 
     const particles = [];
@@ -262,21 +254,17 @@
             const bounce = Math.sin(frames * bounceSpeed) * 3;
             ctx.translate(0, bounce);
 
-            // 陰影
             ctx.fillStyle = 'rgba(0,0,0,0.2)';
             ctx.beginPath(); ctx.ellipse(0, 35, 30, 8, 0, 0, Math.PI*2); ctx.fill();
 
-            // 轎棍
             ctx.fillStyle = '#f1c40f'; ctx.fillRect(-35, 10, 70, 6);
             
-            // 轎身
             ctx.fillStyle = '#ff9ff3'; 
             ctx.beginPath();
             ctx.moveTo(-25, 10); ctx.lineTo(25, 10); ctx.lineTo(30, -15); 
             ctx.quadraticCurveTo(0, -25, -30, -15);
             ctx.fill();
 
-            // 裝飾
             ctx.fillStyle = '#fdcb6e'; ctx.fillRect(-20, 10, 40, 20);
             ctx.fillStyle = '#d63031'; ctx.beginPath(); ctx.arc(0, -20, 6, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = 'red'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center'; ctx.fillText('勇', 0, 24);
@@ -293,12 +281,12 @@
 
     const items = [];
     const itemTypes = [
-        { emoji: '🏮', type: 'good', points: 10, size: 40, color: '#e17055' },
-        { emoji: '🍑', type: 'good', points: 20, size: 40, color: '#ff7675' },
-        { emoji: '💥', type: 'bad', points: 0, size: 35 }, 
-        { emoji: '⚱️', type: 'trigger', points: 50, size: 50, color: '#fdcb6e' } 
+        { emoji: '🏮', type: 'good', points: 10, size: 45, color: '#e17055' },
+        { emoji: '🍑', type: 'good', points: 20, size: 45, color: '#ff7675' },
+        { emoji: '💥', type: 'bad', points: 0, size: 40 }, 
+        { emoji: '⚱️', type: 'trigger', points: 50, size: 55, color: '#fdcb6e' } 
     ];
-    const believerItem = { emoji: '🙇', type: 'fever', points: 50, size: 50, color: '#ffeaa7' };
+    const believerItem = { emoji: '🙇', type: 'fever', points: 50, size: 55, color: '#ffeaa7' };
 
     class Item {
         constructor(forceType = null) {
@@ -315,7 +303,8 @@
             if (this.typeData.type === 'fever') {
                  this.y = canvasHeight - 70 - (Math.random() * 20); 
             } else {
-                 this.y = Math.random() * (canvasHeight - 100) + 50;
+                 // 讓障礙物分散在較大的垂直空間
+                 this.y = Math.random() * (canvasHeight - 120) + 60;
             }
             this.speed = gameSpeed + Math.random() * 2;
             this.markedForDeletion = false;
@@ -332,7 +321,8 @@
             if (this.x < -50) this.markedForDeletion = true;
 
             const dist = Math.hypot(this.x - player.x, this.y - player.y);
-            if (dist < 55) {
+            // 因為畫面變大，判定範圍也稍微調大一點，比較好接
+            if (dist < 60) {
                 if (this.typeData.type === 'bad') {
                     if (!isFeverMode) endGame(); 
                 } 
@@ -402,21 +392,22 @@
     }
     for(let i=0; i<15; i++) lines.push(new SpeedLine());
 
-    // 操作監聽
     const keys = {};
     document.addEventListener('keydown', e => keys[e.code] = true);
     document.addEventListener('keyup', e => keys[e.code] = false);
 
-    // 觸控設定：防止滑動整個頁面，只控制遊戲
     container.addEventListener('touchstart', handleTouch, {passive: false});
     container.addEventListener('touchmove', handleTouch, {passive: false});
     
     function handleTouch(e) {
         if (!gameRunning) return;
-        e.preventDefault(); // 在遊戲框內滑動時，不捲動頁面
+        e.preventDefault();
         const rect = container.getBoundingClientRect();
-        const touchY = e.touches[0].clientY - rect.top;
-        player.targetY = touchY;
+        let touchY = e.touches[0].clientY - rect.top;
+        
+        // --- 關鍵優化：觸控偏移 ---
+        // 讓媽祖的位置在手指上方 50px，這樣手指就不會擋住媽祖了
+        player.targetY = touchY - 50;
     }
 
     function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
@@ -520,6 +511,8 @@
         container.classList.add('bg-normal');
         
         scoreEl.innerText = score;
+        
+        // 初始位置設定
         player.y = canvasHeight / 2;
         player.targetY = canvasHeight / 2;
         
