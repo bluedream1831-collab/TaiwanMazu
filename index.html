@@ -2,46 +2,65 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>粉紅超跑：高清修復版 V8.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<!-- 防止快取的 Meta 設定 -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<title>粉紅超跑：V9.0 作者導流版</title>
 <style>
     body, html {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
-        overflow: hidden;
+        /* 恢復頁面捲動，因為不再是全螢幕 APP 模式 */
+        overflow-y: auto; 
         background-color: #a1c4fd;
         font-family: '微軟正黑體', sans-serif;
-        touch-action: none;
-        user-select: none;
-        -webkit-user-select: none;
+        /* 讓背景有些裝飾，不會太單調 */
+        background-image: radial-gradient(#ffffff 20%, transparent 20%), radial-gradient(#ffffff 20%, transparent 20%);
+        background-position: 0 0, 50px 50px;
+        background-size: 100px 100px;
+    }
+
+    /* 遊戲容器外層，用來置中 */
+    .container-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px 10px;
+        box-sizing: border-box;
     }
 
     #gameContainer {
         position: relative;
         overflow: hidden;
         background: #fdfbf7;
+        
+        /* 電腦版尺寸 */
         width: 800px;
         height: 450px;
-        margin: 0 auto;
-        top: 50%;
-        transform: translateY(-50%);
+        
         border: 4px solid #fff;
         border-radius: 15px;
         box-shadow: 0 15px 35px rgba(0,0,0,0.2);
         transition: background 0.5s;
     }
 
+    /* 手機版調整：不再全螢幕，改為響應式寬度 */
     @media (max-width: 820px) {
         #gameContainer {
-            width: 100% !important;
-            height: 100% !important;
-            top: 0;
-            transform: none;
-            border: none;
-            border-radius: 0;
-            margin: 0;
+            width: 100%;       /* 寬度佔滿容器 */
+            max-width: 600px;  /* 但不要太寬 */
+            height: auto;      /* 高度自動 */
+            aspect-ratio: 16/9; /* 維持 16:9 比例，像看影片一樣 */
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
     }
 
@@ -52,9 +71,9 @@
 
     #uiLayer {
         position: absolute;
-        top: 20px; left: 20px;
+        top: 15px; left: 15px;
         color: #e84393;
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 900;
         text-shadow: 2px 2px 0 #fff;
         pointer-events: none;
@@ -76,47 +95,92 @@
         z-index: 20;
     }
 
-    h1 { margin: 0 0 10px 0; font-size: 32px; text-shadow: 2px 2px 0px #ffeaa7; }
-    p { font-size: 18px; color: #555; font-weight: bold; margin-bottom: 25px; }
+    h1 { margin: 0 0 10px 0; font-size: 28px; text-shadow: 2px 2px 0px #ffeaa7; }
+    p { font-size: 16px; color: #555; font-weight: bold; margin-bottom: 20px; }
     
     button {
         background: linear-gradient(to bottom, #ff9ff3, #f368e0);
         color: white;
         border: none;
-        padding: 12px 40px;
-        font-size: 22px;
+        padding: 10px 35px;
+        font-size: 20px;
         border-radius: 50px;
         cursor: pointer;
         box-shadow: 0 5px 0 #c445b0;
         font-weight: bold;
         transition: transform 0.1s;
+        margin-bottom: 15px;
     }
     button:active { transform: translateY(5px); box-shadow: 0 0 0 #c445b0; }
+
+    /* 作者連結樣式 */
+    .author-link {
+        font-size: 14px;
+        color: #555;
+        text-decoration: none;
+        margin-top: 10px;
+        font-weight: bold;
+        background: rgba(255,255,255,0.8);
+        padding: 5px 15px;
+        border-radius: 20px;
+        border: 1px solid #ddd;
+    }
+    .author-link a {
+        color: #e84393;
+        text-decoration: none;
+    }
+    .author-footer {
+        margin-top: 20px;
+        font-size: 14px;
+        color: #666;
+    }
+    .author-footer a {
+        color: #0984e3;
+        font-weight: bold;
+    }
 
 </style>
 </head>
 <body>
 
-<div id="gameContainer" class="bg-normal">
-    <canvas id="gameCanvas"></canvas>
-    
-    <div id="uiLayer">
-        <div>福氣: <span id="score">0</span></div>
-        <div style="color:#0984e3">速度: <span id="level">1</span></div>
-    </div>
-    
-    <div id="startScreen" class="screen">
-        <div style="font-size:60px; margin-bottom:10px">🚐💨</div>
-        <h1>粉紅超跑 V8.0</h1>
-        <p>疊字修復 ＆ 畫質增強版<br>速度由慢到快，挑戰極限！</p>
-        <button onclick="startGame()">起駕出發</button>
+<div class="container-wrapper">
+    <!-- 遊戲本體 -->
+    <div id="gameContainer" class="bg-normal">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="uiLayer">
+            <div>福氣: <span id="score">0</span></div>
+            <div style="color:#0984e3">速度: <span id="level">1</span></div>
+        </div>
+        
+        <!-- 開始畫面 -->
+        <div id="startScreen" class="screen">
+            <div style="font-size:50px; margin-bottom:10px">🚐💨</div>
+            <h1>粉紅超跑 V9.0</h1>
+            <p>手機非全螢幕版<br>按住畫面上下滑動</p>
+            <button onclick="startGame()">起駕出發</button>
+            
+            <div class="author-link">
+                設計者：<a href="https://vocus.cc/user/@WUCJ" target="_blank">WUCJ (方格子)</a>
+            </div>
+        </div>
+
+        <!-- 結束畫面 -->
+        <div id="gameOverScreen" class="screen" style="display: none;">
+            <h1>🙏 圓滿駐駕 🙏</h1>
+            <p>本次累積福氣</p>
+            <h2 style="font-size: 50px; margin: 10px 0; color: #d63031;" id="finalScore">0</h2>
+            <button onclick="startGame()">再次起駕</button>
+            
+            <div class="author-link">
+                <a href="https://vocus.cc/user/@WUCJ" target="_blank">逛逛 WUCJ 的部落格 ➔</a>
+            </div>
+        </div>
     </div>
 
-    <div id="gameOverScreen" class="screen" style="display: none;">
-        <h1>🙏 圓滿駐駕 🙏</h1>
-        <p>本次累積福氣</p>
-        <h2 style="font-size: 60px; margin: 10px 0; color: #d63031;" id="finalScore">0</h2>
-        <button onclick="startGame()">再次起駕</button>
+    <!-- 頁面下方的作者連結 -->
+    <div class="author-footer">
+        遊戲設計 by <a href="https://vocus.cc/user/@WUCJ" target="_blank">WUCJ</a>
     </div>
 </div>
 
@@ -130,38 +194,30 @@
     const gameOverScreen = document.getElementById('gameOverScreen');
     const finalScoreEl = document.getElementById('finalScore');
 
-    // 核心變數
     let gameRunning = false;
     let score = 0;
     let frames = 0;
-    let animationId = null; // 關鍵：用來儲存動畫ID，防止重複執行
+    let animationId = null;
     
-    // 遊戲參數
     let gameSpeed = 3;
     let difficultyLevel = 1;
 
-    // Fever 變數
     let isFeverMode = false;
     let feverTimer = 0;
     const FEVER_DURATION = 400;
 
-    // --- 關鍵修復：高清 DPI 設定 ---
     let canvasWidth = 800;
     let canvasHeight = 450;
     
     function resizeCanvas() {
         const dpr = window.devicePixelRatio || 1;
-        // 取得容器的 CSS 寬高
         const rect = container.getBoundingClientRect();
         
-        // 設定 Canvas 的實際像素大小 (乘上 DPR)
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
         
-        // 縮放繪圖環境，讓程式碼座標邏輯維持不變
         ctx.scale(dpr, dpr);
         
-        // 記錄邏輯寬高
         canvasWidth = rect.width;
         canvasHeight = rect.height;
 
@@ -170,14 +226,13 @@
             player.targetY = canvasHeight / 2;
         }
     }
+    // 監聽視窗變化
     window.addEventListener('resize', resizeCanvas);
 
-    // 粒子特效
     const particles = [];
     class Particle {
         constructor(x, y, color) {
-            this.x = x;
-            this.y = y;
+            this.x = x; this.y = y;
             this.size = Math.random() * 8 + 3;
             this.speedX = Math.random() * 8 - 4;
             this.speedY = Math.random() * 8 - 4;
@@ -185,27 +240,19 @@
             this.life = 1;
         }
         update() {
-            this.x += this.speedX;
-            this.y += this.speedY;
-            this.life -= 0.04;
-            this.size *= 0.9;
+            this.x += this.speedX; this.y += this.speedY;
+            this.life -= 0.04; this.size *= 0.9;
         }
         draw() {
-            ctx.fillStyle = this.color;
-            ctx.globalAlpha = Math.max(0, this.life);
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
+            ctx.fillStyle = this.color; ctx.globalAlpha = Math.max(0, this.life);
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+            ctx.fill(); ctx.globalAlpha = 1;
         }
     }
 
-    // 主角
     const player = {
-        x: 0, y: 0,
-        baseX: 0.15,
-        width: 80, height: 60,
-        targetY: 0,
+        x: 0, y: 0, baseX: 0.15,
+        width: 80, height: 60, targetY: 0,
         draw: function() {
             this.x = canvasWidth * this.baseX;
             ctx.save();
@@ -222,7 +269,7 @@
             // 轎棍
             ctx.fillStyle = '#f1c40f'; ctx.fillRect(-35, 10, 70, 6);
             
-            // 轎身 (Fever發光由CSS背景處理，這裡保持清晰)
+            // 轎身
             ctx.fillStyle = '#ff9ff3'; 
             ctx.beginPath();
             ctx.moveTo(-25, 10); ctx.lineTo(25, 10); ctx.lineTo(30, -15); 
@@ -244,7 +291,6 @@
         }
     };
 
-    // 道具
     const items = [];
     const itemTypes = [
         { emoji: '🏮', type: 'good', points: 10, size: 40, color: '#e17055' },
@@ -256,9 +302,8 @@
 
     class Item {
         constructor(forceType = null) {
-            if (forceType) {
-                this.typeData = forceType;
-            } else {
+            if (forceType) { this.typeData = forceType; } 
+            else {
                 let rand = Math.random();
                 if (rand < 0.12) this.typeData = itemTypes[3]; 
                 else if (rand < 0.40) this.typeData = itemTypes[2]; 
@@ -267,13 +312,11 @@
             }
 
             this.x = canvasWidth + 50;
-            
             if (this.typeData.type === 'fever') {
                  this.y = canvasHeight - 70 - (Math.random() * 20); 
             } else {
                  this.y = Math.random() * (canvasHeight - 100) + 50;
             }
-            
             this.speed = gameSpeed + Math.random() * 2;
             this.markedForDeletion = false;
         }
@@ -320,9 +363,7 @@
     }
 
     function createExplosion(x, y, color) {
-        for(let i=0; i<10; i++){
-            particles.push(new Particle(x, y, color));
-        }
+        for(let i=0; i<10; i++) particles.push(new Particle(x, y, color));
     }
 
     function startFeverMode() {
@@ -340,7 +381,6 @@
         container.classList.add('bg-normal');
     }
 
-    // 速度線
     const lines = [];
     class SpeedLine {
         constructor() { this.reset(); }
@@ -362,24 +402,23 @@
     }
     for(let i=0; i<15; i++) lines.push(new SpeedLine());
 
-    // --- 操作 ---
+    // 操作監聽
     const keys = {};
     document.addEventListener('keydown', e => keys[e.code] = true);
     document.addEventListener('keyup', e => keys[e.code] = false);
 
+    // 觸控設定：防止滑動整個頁面，只控制遊戲
     container.addEventListener('touchstart', handleTouch, {passive: false});
     container.addEventListener('touchmove', handleTouch, {passive: false});
     
     function handleTouch(e) {
         if (!gameRunning) return;
-        e.preventDefault(); 
-        const rect = container.getBoundingClientRect(); // 注意：用 container
+        e.preventDefault(); // 在遊戲框內滑動時，不捲動頁面
+        const rect = container.getBoundingClientRect();
         const touchY = e.touches[0].clientY - rect.top;
-        // 如果高度有縮放，需調整比例 (此處因為 canvas css = container css，通常直接可用)
         player.targetY = touchY;
     }
 
-    // --- 圓角矩形 helper ---
     function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
         if (typeof radius === 'undefined') radius = 5;
         ctx.beginPath();
@@ -397,53 +436,37 @@
         if (stroke) ctx.stroke();
     }
 
-    // --- 關鍵修復：UI 繪製邏輯 ---
     function drawGameUI() {
         if (!isFeverMode) return;
-
         ctx.save();
-        
         let cx = canvasWidth / 2;
         let cy = canvasHeight * 0.25;
-        let scale = 1 + Math.sin(frames * 0.15) * 0.05; // 呼吸效果
+        let scale = 1 + Math.sin(frames * 0.15) * 0.05;
 
         ctx.translate(cx, cy);
         ctx.scale(scale, scale);
 
-        // 1. 上方大字：正在鑽轎底
         ctx.font = 'bold 36px "微軟正黑體"';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        
-        // 文字光暈
         ctx.shadowColor = '#ffff00';
         ctx.shadowBlur = 15;
         ctx.fillStyle = '#d63031';
         ctx.fillText("🙏 正在鑽轎底 🙏", 0, 0);
-        
-        ctx.shadowBlur = 0; // 關閉陰影以免影響下方
+        ctx.shadowBlur = 0;
 
-        // 2. 下方紅色圓角提示框 (仿照您的截圖)
-        let boxW = 280;
-        let boxH = 40;
-        let boxY = 40;
-        
-        ctx.fillStyle = '#d63031'; // 紅底
+        let boxW = 280; let boxH = 40; let boxY = 40;
+        ctx.fillStyle = '#d63031';
         roundRect(ctx, -boxW/2, boxY, boxW, boxH, 20, true, false);
 
-        // 3. 提示框內的文字
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 18px "微軟正黑體"';
         ctx.fillText("碰觸信徒賜福加分！", 0, boxY + boxH/2);
-
         ctx.restore();
     }
 
-    // --- 遊戲迴圈 ---
     function animate() {
-        // 清除畫布：使用邏輯寬高
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-
         lines.forEach(line => { line.update(); line.draw(); });
 
         if (keys.ArrowUp) player.targetY -= 9;
@@ -453,11 +476,8 @@
 
         let spawnRate = isFeverMode ? 10 : Math.max(20, 60 - difficultyLevel * 3);
         if (frames % spawnRate === 0) {
-            if (isFeverMode) {
-                items.push(new Item(believerItem)); 
-            } else {
-                items.push(new Item());
-            }
+            if (isFeverMode) items.push(new Item(believerItem)); 
+            else items.push(new Item());
         }
 
         for (let i = items.length - 1; i >= 0; i--) {
@@ -480,23 +500,15 @@
         }
 
         frames++;
-        
-        if (gameRunning) {
-            animationId = requestAnimationFrame(animate);
-        }
+        if (gameRunning) animationId = requestAnimationFrame(animate);
     }
 
     function startGame() {
-        // --- 核心修復：確保舊的迴圈已死 ---
-        if (animationId) {
-            cancelAnimationFrame(animationId);
-        }
-
-        resizeCanvas(); // 初始化尺寸與DPI
+        if (animationId) cancelAnimationFrame(animationId);
+        resizeCanvas();
         gameRunning = true;
         score = 0;
         frames = 0;
-        
         gameSpeed = 3; 
         difficultyLevel = 1;
         levelEl.innerText = difficultyLevel;
@@ -513,20 +525,17 @@
         
         startScreen.style.display = 'none';
         gameOverScreen.style.display = 'none';
-        
-        animate(); // 啟動新迴圈
+        animate();
     }
 
     function endGame() {
-        gameRunning = false; // 這會停止 animate 內的遞迴
-        if (animationId) cancelAnimationFrame(animationId); // 雙重保險
-        
+        gameRunning = false;
+        if (animationId) cancelAnimationFrame(animationId);
         finalScoreEl.innerText = score;
         gameOverScreen.style.display = 'flex';
         container.classList.remove('bg-fever');
     }
     
-    // 初始載入
     resizeCanvas();
 </script>
 </body>
