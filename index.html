@@ -2,30 +2,26 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<!-- 關鍵設定：禁止縮放，適應螢幕寬度，針對手機優化 -->
+<!-- 關鍵：鎖定手機螢幕縮放與捲動 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>粉紅超跑：全民鑽轎底 V5.0</title>
+<title>粉紅超跑：鑽轎底加強版 V6.0</title>
 <style>
-    /* 全局設定 */
     body, html {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
-        overflow: hidden; /* 禁止捲動 */
+        overflow: hidden;
         background-color: #a1c4fd;
         font-family: '微軟正黑體', sans-serif;
-        touch-action: none; /* 禁止瀏覽器預設觸控行為 */
-        -webkit-user-select: none; /* 禁止選取文字 */
+        touch-action: none; /* 禁止手機預設觸控 */
         user-select: none;
     }
 
-    /* 遊戲容器 */
     #gameContainer {
         position: relative;
         overflow: hidden;
         background: #fdfbf7;
-        /* 電腦版設定：維持視窗感 */
         width: 800px;
         height: 450px;
         margin: 0 auto;
@@ -34,9 +30,10 @@
         border: 4px solid #fff;
         border-radius: 15px;
         box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        transition: background 0.5s; /* 背景色切換動畫 */
     }
 
-    /* 手機版設定 (RWD)：強制全螢幕 */
+    /* 手機全螢幕模式 */
     @media (max-width: 820px) {
         #gameContainer {
             width: 100% !important;
@@ -49,45 +46,39 @@
         }
     }
 
-    canvas { 
-        display: block; 
-        width: 100%;
-        height: 100%;
-    }
-    
-    /* 遊戲背景漸層與模式切換 */
+    /* 背景樣式 */
     .bg-normal { background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%); }
-    .bg-fever { background: linear-gradient(180deg, #ff9a9e 0%, #fecfef 100%); }
+    .bg-fever { background: linear-gradient(180deg, #ff9a9e 0%, #fab1a0 100%); } /* 鑽轎底時變紅 */
 
-    /* UI 介面層 */
+    canvas { display: block; width: 100%; height: 100%; }
+
     #uiLayer {
         position: absolute;
-        top: 20px;
-        left: 20px;
+        top: 20px; left: 20px;
         color: #e84393;
-        font-size: clamp(24px, 5vw, 36px); /* 字體大小隨螢幕縮放 */
+        font-size: clamp(24px, 5vw, 36px);
         font-weight: 900;
         text-shadow: 2px 2px 0 #fff;
-        z-index: 10;
         pointer-events: none;
+        z-index: 10;
     }
 
+    /* 鑽轎底提示文字 - 強調顯示 */
     #feverText {
         position: absolute;
-        top: 15%;
+        top: 20%;
         width: 100%;
         text-align: center;
-        font-size: clamp(30px, 8vw, 50px);
+        font-size: clamp(30px, 8vw, 60px);
         color: #d63031;
         font-weight: bold;
         text-shadow: 3px 3px 0 #fff, 0 0 20px rgba(255,215,0,0.8);
-        display: none;
+        display: none; /* 預設隱藏 */
         animation: pulse 0.5s infinite alternate;
         pointer-events: none;
         z-index: 15;
     }
 
-    /* 開始與結束畫面 */
     .screen {
         position: absolute;
         top: 0; left: 0; width: 100%; height: 100%;
@@ -102,21 +93,9 @@
         backdrop-filter: blur(5px);
     }
 
-    h1 { 
-        margin: 0 0 10px 0; 
-        font-size: clamp(28px, 6vw, 40px); 
-        text-shadow: 2px 2px 0px #ffeaa7; 
-    }
+    h1 { margin: 0 0 10px 0; font-size: clamp(28px, 6vw, 40px); text-shadow: 2px 2px 0px #ffeaa7; }
+    p { font-size: clamp(16px, 4vw, 20px); color: #555; font-weight: bold; margin-bottom: 25px; }
     
-    p { 
-        font-size: clamp(16px, 4vw, 20px); 
-        color: #555; 
-        font-weight: bold; 
-        margin-bottom: 25px; 
-        padding: 0 20px;
-    }
-
-    /* 大按鈕，方便手機點擊 */
     button {
         background: linear-gradient(to bottom, #ff9ff3, #f368e0);
         color: white;
@@ -127,20 +106,11 @@
         cursor: pointer;
         box-shadow: 0 6px 0 #c445b0;
         font-weight: bold;
-        transition: transform 0.1s;
-        -webkit-tap-highlight-color: transparent; /* 移除手機點擊藍框 */
+        -webkit-tap-highlight-color: transparent;
     }
     button:active { transform: translateY(6px); box-shadow: 0 0 0 #c445b0; }
-    
-    @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
 
-    /* 手機直向提示 (選用) */
-    .rotate-hint {
-        display: none;
-        font-size: 12px;
-        color: #888;
-        margin-top: 10px;
-    }
+    @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
 </style>
 </head>
 <body>
@@ -149,15 +119,21 @@
     <canvas id="gameCanvas"></canvas>
     
     <div id="uiLayer">福氣: <span id="score">0</span></div>
-    <div id="feverText">🙏 鑽轎底保平安 🙏<br><span style="font-size:0.6em">衝撞信徒加分！</span></div>
+    
+    <!-- 鑽轎底提示 -->
+    <div id="feverText">
+        🙏 正在鑽轎底 🙏<br>
+        <span style="font-size:0.5em; color:#fff; background:#d63031; padding:2px 10px; border-radius:10px;">
+            碰觸信徒賜福加分！
+        </span>
+    </div>
     
     <div id="startScreen" class="screen">
         <div style="font-size:60px; margin-bottom:10px">🚐💨</div>
-        <h1>粉紅超跑 V5.0</h1>
-        <p>手機全螢幕版！<br>手指按住螢幕上下滑動</p>
-        <p style="font-size:0.8em; color:#d63031">收集金爐 ⚱️ 開啟無敵鑽轎底！</p>
+        <h1>粉紅超跑 V6.0</h1>
+        <p>手機全螢幕修復版<br>按住滑動控制</p>
+        <p style="font-size:0.8em; color:#d63031">🔥 收集金爐 ⚱️ 機率大增！</p>
         <button onclick="startGame()">起駕出發</button>
-        <div class="rotate-hint">💡 橫著玩視野更寬喔！</div>
     </div>
 
     <div id="gameOverScreen" class="screen" style="display: none;">
@@ -181,43 +157,36 @@
     let gameRunning = false;
     let score = 0;
     let frames = 0;
-    let gameSpeed = 4;
+    let gameSpeed = 5;
     
-    // Fever 模式變數
+    // Fever 變數
     let isFeverMode = false;
     let feverTimer = 0;
-    const FEVER_DURATION = 350;
+    const FEVER_DURATION = 400; // 延長一點時間讓你爽
 
-    // --- 關鍵修改：RWD 畫布尺寸處理 ---
+    // RWD 畫布調整
     function resizeCanvas() {
-        // 取得容器實際大小 (手機上是全螢幕，電腦上是固定框)
         const width = container.clientWidth;
         const height = container.clientHeight;
-        
-        // 為了避免高解析度手機(Retina)模糊，可以設定 2 倍像素
-        // 這裡為了效能先使用 1:1，但確保 fillStyle 填滿
         canvas.width = width;
         canvas.height = height;
     }
-    // 監聽視窗改變 (旋轉手機時觸發)
     window.addEventListener('resize', () => {
         resizeCanvas();
-        // 如果正在玩，重置媽祖位置避免跑到螢幕外
         if(gameRunning) {
             player.y = canvas.height / 2;
             player.targetY = canvas.height / 2;
         }
     });
-    // 初始化
     resizeCanvas();
 
-    // --- 粒子特效 ---
+    // 粒子特效
     const particles = [];
     class Particle {
         constructor(x, y, color) {
             this.x = x;
             this.y = y;
-            this.size = Math.random() * 8 + 3; // 手機上粒子大一點比較好看
+            this.size = Math.random() * 8 + 3;
             this.speedX = Math.random() * 8 - 4;
             this.speedY = Math.random() * 8 - 4;
             this.color = color;
@@ -239,18 +208,16 @@
         }
     }
 
-    // --- 粉紅超跑主角 ---
+    // 主角
     const player = {
-        x: 0, // 在 draw 設定
+        x: 0,
         y: 0,
-        baseX: 0.15, // 相對 X 位置 (畫面寬度的 15%)
+        baseX: 0.15,
         width: 80, 
         height: 60,
         targetY: 0,
         draw: function() {
-            // RWD X 軸位置調整
             this.x = canvas.width * this.baseX;
-
             ctx.save();
             ctx.translate(this.x, this.y);
             
@@ -259,19 +226,20 @@
             const bounce = Math.sin(frames * bounceSpeed) * 3;
             ctx.translate(0, bounce);
 
-            // 繪製順序：陰影 -> 棍子 -> 轎身 -> 布簾 -> 裝飾
-            
             // 陰影
             ctx.fillStyle = 'rgba(0,0,0,0.2)';
             ctx.beginPath(); ctx.ellipse(0, 35, 30, 8, 0, 0, Math.PI*2); ctx.fill();
 
+            // 轎身發光 (Fever 模式)
+            if (isFeverMode) {
+                ctx.shadowColor = '#ffeaa7';
+                ctx.shadowBlur = 30;
+            }
+
             // 轎棍
             ctx.fillStyle = '#f1c40f'; ctx.fillRect(-35, 10, 70, 6);
-
-            // 轎身發光
-            if (isFeverMode) { ctx.shadowColor = '#ffeaa7'; ctx.shadowBlur = 25; }
             
-            // 轎身 (粉紅頂蓋)
+            // 粉紅頂蓋
             ctx.fillStyle = '#ff9ff3'; 
             ctx.beginPath();
             ctx.moveTo(-25, 10); ctx.lineTo(25, 10); ctx.lineTo(30, -15); 
@@ -279,36 +247,30 @@
             ctx.fill();
             ctx.shadowBlur = 0;
 
-            // 布簾
+            // 裝飾
             ctx.fillStyle = '#fdcb6e'; ctx.fillRect(-20, 10, 40, 20);
-            
-            // 繡球
             ctx.fillStyle = '#d63031'; ctx.beginPath(); ctx.arc(0, -20, 6, 0, Math.PI*2); ctx.fill();
-            
-            // 勇字
             ctx.fillStyle = 'red'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center'; ctx.fillText('勇', 0, 24);
 
             ctx.restore();
         },
         update: function() {
-            // 平滑跟隨
-            this.y += (this.targetY - this.y) * 0.2; // 0.2 係數讓反應更靈敏
-            
-            // 邊界限制
+            this.y += (this.targetY - this.y) * 0.2;
             if(this.y < 40) this.targetY = 40;
             if(this.y > canvas.height - 40) this.targetY = canvas.height - 40;
         }
     };
 
-    // --- 道具 ---
+    // 道具
     const items = [];
     const itemTypes = [
         { emoji: '🏮', type: 'good', points: 10, size: 40, color: '#e17055' },
         { emoji: '🍑', type: 'good', points: 20, size: 40, color: '#ff7675' },
         { emoji: '💥', type: 'bad', points: 0, size: 35 }, 
-        { emoji: '⚱️', type: 'trigger', points: 50, size: 45, color: '#fdcb6e' } 
+        { emoji: '⚱️', type: 'trigger', points: 50, size: 50, color: '#fdcb6e' } 
     ];
-    const believerItem = { emoji: '🙇', type: 'fever', points: 50, size: 45, color: '#ffeaa7' };
+    // 🙇 信徒 (鑽轎底專用)
+    const believerItem = { emoji: '🙇', type: 'fever', points: 50, size: 50, color: '#ffeaa7' };
 
     class Item {
         constructor(forceType = null) {
@@ -316,20 +278,20 @@
                 this.typeData = forceType;
             } else {
                 let rand = Math.random();
-                if (rand < 0.05) this.typeData = itemTypes[3]; // 金爐
-                else if (rand < 0.35) this.typeData = itemTypes[2]; // 炸彈
-                else if (rand < 0.65) this.typeData = itemTypes[1];
+                // 🔥 修復：金爐機率大幅提高至 15% (原 5%)
+                if (rand < 0.15) this.typeData = itemTypes[3]; 
+                else if (rand < 0.40) this.typeData = itemTypes[2]; 
+                else if (rand < 0.70) this.typeData = itemTypes[1];
                 else this.typeData = itemTypes[0];
             }
 
             this.x = canvas.width + 50;
             
-            // 根據畫布高度決定生成位置
+            // 🔥 修復：信徒只會出現在地面 (畫面下方)，更有鑽轎底的感覺
             if (this.typeData.type === 'fever') {
-                // 信徒稍微偏下
-                 this.y = Math.random() * (canvas.height * 0.6) + (canvas.height * 0.3);
+                 this.y = canvas.height - 60 - (Math.random() * 20); // 固定在底部
             } else {
-                 this.y = Math.random() * (canvas.height - 80) + 40;
+                 this.y = Math.random() * (canvas.height - 100) + 40;
             }
             
             this.speed = gameSpeed + Math.random() * 2;
@@ -347,8 +309,8 @@
             if (this.x < -50) this.markedForDeletion = true;
 
             const dist = Math.hypot(this.x - player.x, this.y - player.y);
-            // 手機版碰撞寬容度稍微大一點 (50)
-            if (dist < 50) {
+            // 判定範圍
+            if (dist < 55) {
                 if (this.typeData.type === 'bad') {
                     if (!isFeverMode) endGame(); 
                 } 
@@ -379,8 +341,10 @@
         isFeverMode = true;
         feverTimer = FEVER_DURATION;
         container.classList.remove('bg-normal');
-        container.classList.add('bg-fever');
-        feverText.style.display = 'block';
+        container.classList.add('bg-fever'); // 背景變色
+        feverText.style.display = 'block'; // 顯示大字
+        
+        // 清除場上炸彈
         items.forEach(item => { if(item.typeData.type === 'bad') item.markedForDeletion = true; });
     }
 
@@ -391,12 +355,10 @@
         feverText.style.display = 'none';
     }
 
-    // --- 速度線背景 ---
+    // 速度線
     const lines = [];
     class SpeedLine {
-        constructor() {
-            this.reset();
-        }
+        constructor() { this.reset(); }
         reset() {
             this.x = Math.random() * canvas.width;
             this.y = Math.random() * canvas.height;
@@ -406,10 +368,7 @@
         update() {
             let s = isFeverMode ? (this.speed + gameSpeed) * 1.5 : this.speed + gameSpeed;
             this.x -= s;
-            if(this.x < -50) {
-                this.x = canvas.width;
-                this.y = Math.random() * canvas.height;
-            }
+            if(this.x < -50) this.reset();
         }
         draw() {
             ctx.fillStyle = isFeverMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.4)';
@@ -418,35 +377,30 @@
     }
     for(let i=0; i<15; i++) lines.push(new SpeedLine());
 
-    // --- 操作監聽 (手機+電腦) ---
+    // 控制
     const keys = {};
     document.addEventListener('keydown', e => keys[e.code] = true);
     document.addEventListener('keyup', e => keys[e.code] = false);
 
-    // 手機觸控：使用整個 container
     container.addEventListener('touchstart', handleTouch, {passive: false});
     container.addEventListener('touchmove', handleTouch, {passive: false});
     
     function handleTouch(e) {
         if (!gameRunning) return;
-        e.preventDefault(); // 禁止瀏覽器滑動
-        
-        // 取得觸控點相對於 Canvas 的位置
+        e.preventDefault(); 
         const rect = canvas.getBoundingClientRect();
         const touchY = e.touches[0].clientY - rect.top;
-        
-        // 直接設定目標位置，讓媽祖跟手
         player.targetY = touchY;
     }
 
-    // --- 遊戲迴圈 ---
+    // 遊戲迴圈
     function animate() {
         if (!gameRunning) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         lines.forEach(line => { line.update(); line.draw(); });
 
-        if (keys.ArrowUp) player.targetY -= 9; // 電腦按鍵速度
+        if (keys.ArrowUp) player.targetY -= 9;
         if (keys.ArrowDown) player.targetY += 9;
         player.update();
         player.draw();
@@ -454,8 +408,11 @@
         // 道具生成
         let spawnRate = isFeverMode ? 8 : Math.max(20, 60 - gameSpeed*1.5);
         if (frames % spawnRate === 0) {
-            if (isFeverMode) items.push(new Item(believerItem));
-            else items.push(new Item());
+            if (isFeverMode) {
+                items.push(new Item(believerItem)); // 鑽轎底模式：只產生信徒
+            } else {
+                items.push(new Item());
+            }
         }
 
         for (let i = items.length - 1; i >= 0; i--) {
@@ -480,24 +437,20 @@
     }
 
     function startGame() {
-        resizeCanvas(); // 確保尺寸正確
+        resizeCanvas();
         gameRunning = true;
         score = 0;
         frames = 0;
-        gameSpeed = 5; // 手機版稍微快一點點比較刺激
+        gameSpeed = 5;
         items.length = 0;
         particles.length = 0;
         isFeverMode = false;
         container.classList.remove('bg-fever');
         container.classList.add('bg-normal');
         feverText.style.display = 'none';
-        
         scoreEl.innerText = score;
-        
-        // 初始位置設定在畫面中間
         player.y = canvas.height / 2;
         player.targetY = canvas.height / 2;
-        
         startScreen.style.display = 'none';
         gameOverScreen.style.display = 'none';
         animate();
