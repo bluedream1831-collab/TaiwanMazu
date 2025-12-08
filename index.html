@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<!-- 防止快取設定 -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<title>粉紅超跑：V10.0 大畫面好操作版</title>
+<title>粉紅超跑：V11.0 Q版金爐登場</title>
 <style>
     body, html {
         margin: 0;
@@ -21,7 +20,6 @@
         background-image: radial-gradient(#ffffff 20%, transparent 20%), radial-gradient(#ffffff 20%, transparent 20%);
         background-position: 0 0, 50px 50px;
         background-size: 100px 100px;
-        /* 禁止選取，避免長按跳出選單 */
         -webkit-touch-callout: none;
         -webkit-user-select: none;
         user-select: none;
@@ -41,26 +39,21 @@
         position: relative;
         overflow: hidden;
         background: #fdfbf7;
-        
-        /* 電腦版維持寬螢幕 */
         width: 800px;
         height: 450px;
-        
         border: 4px solid #fff;
         border-radius: 15px;
         box-shadow: 0 15px 35px rgba(0,0,0,0.2);
         transition: background 0.5s;
     }
 
-    /* --- V10.0 關鍵修改：手機版 CSS --- */
     @media (max-width: 820px) {
         #gameContainer {
             width: 100%;
             max-width: 100%;
-            /* 關鍵：使用視窗高度的 60%，讓畫面變高、變大！ */
             height: 60vh; 
-            min-height: 400px; /* 確保至少有這麼高 */
-            aspect-ratio: auto; /* 取消固定比例 */
+            min-height: 400px;
+            aspect-ratio: auto;
             border-radius: 12px;
             margin-bottom: 20px;
         }
@@ -150,9 +143,10 @@
         </div>
         
         <div id="startScreen" class="screen">
+            <!-- 這裡我也畫一個小金爐當圖示 -->
             <div style="font-size:60px; margin-bottom:10px">🚐💨</div>
-            <h1>粉紅超跑 V10.0</h1>
-            <p>大畫面・好操作版<br>手指上下滑動控制</p>
+            <h1>粉紅超跑 V11.0</h1>
+            <p>全新 Q版金爐登場！<br>手指上下滑動控制</p>
             <button onclick="startGame()">起駕出發</button>
             
             <div class="author-link">
@@ -215,7 +209,6 @@
         canvasHeight = rect.height;
 
         if(gameRunning) {
-            // 視窗大小改變時，確保媽祖在安全範圍
             player.targetY = Math.min(player.targetY, canvasHeight - 50);
         }
     }
@@ -279,12 +272,107 @@
         }
     };
 
+    // --- 新增：繪製可愛金爐的專用函式 ---
+    function drawCuteFurnace(ctx, x, y, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        const scale = size / 55; // 基礎縮放比例
+        ctx.scale(scale, scale);
+
+        // 1. 香菸 (在最後面)
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-5, -20); ctx.lineTo(-5, -35);
+        ctx.moveTo(0, -20); ctx.lineTo(0, -40);
+        ctx.moveTo(5, -20); ctx.lineTo(5, -35);
+        ctx.stroke();
+
+        // 2. 煙霧 (飄動效果)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        let smokeOffset = Math.sin(frames * 0.1) * 3;
+        ctx.beginPath();
+        ctx.arc(0 + smokeOffset, -45, 5, 0, Math.PI*2);
+        ctx.arc(-3 + smokeOffset, -52, 4, 0, Math.PI*2);
+        ctx.fill();
+
+        // 3. 金爐把手 (金色耳朵)
+        ctx.fillStyle = '#F1C40F';
+        ctx.beginPath();
+        ctx.ellipse(-28, -5, 8, 12, 0, 0, Math.PI*2); // 左耳
+        ctx.ellipse(28, -5, 8, 12, 0, 0, Math.PI*2); // 右耳
+        ctx.fill();
+        // 把手環
+        ctx.strokeStyle = '#DAA520';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(-28, 5, 5, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(28, 5, 5, 0, Math.PI*2);
+        ctx.stroke();
+
+        // 4. 金爐身體 (紅磚色)
+        // 建立漸層讓它有立體感
+        let grd = ctx.createLinearGradient(-20, -20, 20, 20);
+        grd.addColorStop(0, '#e74c3c'); // 亮紅
+        grd.addColorStop(1, '#c0392b'); // 暗紅
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        // 畫一個圓胖的身體
+        ctx.arc(0, 0, 25, 0, Math.PI*2); 
+        ctx.fill();
+
+        // 5. 金爐頂蓋邊緣 (金色)
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.ellipse(0, -22, 22, 6, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        // 6. 底座 (金色)
+        ctx.fillStyle = '#DAA520';
+        ctx.beginPath();
+        ctx.roundRect(-20, 22, 40, 8, 5);
+        ctx.fill();
+
+        // 7. 表情 (可愛的關鍵)
+        // 眼睛 (笑瞇瞇)
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(-10, -2, 4, Math.PI, 0); // 左眼 ^
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(10, -2, 4, Math.PI, 0); // 右眼 ^
+        ctx.stroke();
+
+        // 腮紅
+        ctx.fillStyle = '#ff9ff3';
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.arc(-15, 5, 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(15, 5, 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // 嘴巴 (開口笑)
+        ctx.fillStyle = '#8e44ad'; // 嘴內深色
+        ctx.beginPath();
+        ctx.arc(0, 5, 6, 0, Math.PI);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
     const items = [];
     const itemTypes = [
         { emoji: '🏮', type: 'good', points: 10, size: 45, color: '#e17055' },
         { emoji: '🍑', type: 'good', points: 20, size: 45, color: '#ff7675' },
         { emoji: '💥', type: 'bad', points: 0, size: 40 }, 
-        { emoji: '⚱️', type: 'trigger', points: 50, size: 55, color: '#fdcb6e' } 
+        // ⚱️ 金爐改為 trigger 類型，不再使用 emoji
+        { emoji: '', type: 'trigger', points: 50, size: 55, color: '#fdcb6e' } 
     ];
     const believerItem = { emoji: '🙇', type: 'fever', points: 50, size: 55, color: '#ffeaa7' };
 
@@ -303,17 +391,22 @@
             if (this.typeData.type === 'fever') {
                  this.y = canvasHeight - 70 - (Math.random() * 20); 
             } else {
-                 // 讓障礙物分散在較大的垂直空間
                  this.y = Math.random() * (canvasHeight - 120) + 60;
             }
             this.speed = gameSpeed + Math.random() * 2;
             this.markedForDeletion = false;
         }
         draw() {
-            ctx.font = `${this.typeData.size}px serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(this.typeData.emoji, this.x, this.y);
+            // 如果是 trigger (金爐)，使用自定義繪圖
+            if (this.typeData.type === 'trigger') {
+                drawCuteFurnace(ctx, this.x, this.y, this.typeData.size);
+            } else {
+                // 其他道具繼續使用 Emoji
+                ctx.font = `${this.typeData.size}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.typeData.emoji, this.x, this.y);
+            }
         }
         update() {
             let currentSpeed = isFeverMode ? this.speed * 1.5 : this.speed;
@@ -321,7 +414,6 @@
             if (this.x < -50) this.markedForDeletion = true;
 
             const dist = Math.hypot(this.x - player.x, this.y - player.y);
-            // 因為畫面變大，判定範圍也稍微調大一點，比較好接
             if (dist < 60) {
                 if (this.typeData.type === 'bad') {
                     if (!isFeverMode) endGame(); 
@@ -404,9 +496,6 @@
         e.preventDefault();
         const rect = container.getBoundingClientRect();
         let touchY = e.touches[0].clientY - rect.top;
-        
-        // --- 關鍵優化：觸控偏移 ---
-        // 讓媽祖的位置在手指上方 50px，這樣手指就不會擋住媽祖了
         player.targetY = touchY - 50;
     }
 
